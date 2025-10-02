@@ -1,6 +1,7 @@
+
+S2S VPN with Password Authentication
 _____________________
 ********************* SETUP VMNETS
-
 
 VMWare > Edit > Virtual Network Editor
 
@@ -45,9 +46,7 @@ Deploy 2 CSR1000v
 	Name of Virtual Machine: VPN-PH
 	Deployment Options: Small
 	Bootstrap:
-		Router Name: VPN-PH
-		Login User: admin
-		Login Pass: pass
+		None
 
 	Network Adapter: NAT
 	Network Adapter 2: VMNet2
@@ -57,9 +56,7 @@ Deploy 2 CSR1000v
 	Name of Virtual Machine: VPN-JP
 	Deployment Options: Small
 	Bootstrap:
-		Router Name: VPN-JP
-		Login User: admin
-		Login Pass: pass
+		None
 
 	Network Adapter: NAT
 	Network Adapter 2: VMNet2
@@ -157,10 +154,12 @@ ______
 ###### ADD USER ACCOUNT ON LINUX TINYVM
 
 @BLDG-PH, BLDG-JP
-adduser nickname-m
-C1sc0123
-C1sc0123
+adduser admin
+pass
+pass
 
+nano /etc/sudoers
+	admin  ALL=(ALL) ALL
 
 _____________________
 ********************* ACCESS VPN WEB GUI
