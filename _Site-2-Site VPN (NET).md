@@ -122,19 +122,19 @@ Deploy 2 CSR1000v:
 Deploy 2 YVM-v6
 1. BLDG-PH
 Name of Virtual Machine: BLDG-PH
-- Network Adapter: VMNet15
+- Network Adapter: VMNet3
 
 <br>
 
 2. BLDG-JP-1
 Name of Virtual Machine: BLDG-JP-1
-- Network Adapter: VMNet16
+- Network Adapter: VMNet4
 
 <br>
 
 3. BLDG-JP-2
 Name of Virtual Machine: BLDG-JP-2
-- Network Adapter: VMNet16
+- Network Adapter: VMNet4
 
 <br>
 
