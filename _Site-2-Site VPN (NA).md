@@ -1,3 +1,12 @@
+
+![diag](<img/S2S-Blank.png>)
+
+<br>
+<br>
+
+---
+&nbsp;
+
 ## Prereq
 ### Setup Virtual Network Adapters
 `VMWare` > `Edit` > `Virtual Network Editor`  
