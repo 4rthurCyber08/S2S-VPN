@@ -244,12 +244,21 @@ ping 10.21.21.213
 !@NetOps
 nmcli connection add \
 type ethernet \
-con-name TunayNaLAN \
+con-name VMNET15 \
 if-name ens224 \
 ipv4.method manual \
 ipv4.addresses 10.255.10.6/24 \
 autoconnect yes
-nmcli connection up TunayNaLAN
+nmcli connection up VMNET15
+
+nmcli connection add \
+type ethernet \
+con-name VMNET16 \
+if-name ens256 \
+ipv4.method manual \
+ipv4.addresses 10.69.255.4/29 \
+autoconnect yes
+nmcli connection up VMNET16
 ~~~
 
 <br>
