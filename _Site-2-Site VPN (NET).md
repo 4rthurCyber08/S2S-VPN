@@ -1,3 +1,12 @@
+
+![diag](<img/S2S-Blank.png>)
+
+<br>
+<br>
+
+---
+&nbsp;
+
 ## Prerequisite
 ### Setup Virtual Network Adapters
 `VMWare` > `Edit` > `Virtual Network Editor`  
@@ -78,7 +87,7 @@ Deploy 2 CSR1000v:
   - Router Name: VPN-PH
   - Login User: admin
   - Login Pass: pass
-  - MGMT Interface: Gi2
+  - MGMT Interface: GigabitEthernet2
   - MGMT IP: 10.255.10.254/24
   - Feature - Telnet & SSH: Enabled
 
@@ -97,7 +106,7 @@ Deploy 2 CSR1000v:
   - Router Name: VPN-PH
   - Login User: admin
   - Login Pass: pass
-  - MGMT Interface: Gi2
+  - MGMT Interface: GigabitEthernet2
   - MGMT IP: 10.69.255.6/29
   - Feature - Telnet & SSH: Enabled
 
