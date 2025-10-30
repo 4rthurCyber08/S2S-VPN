@@ -78,7 +78,7 @@ Deploy 2 CSR1000v:
   - Router Name: VPN-PH
   - Login User: admin
   - Login Pass: pass
-  - MGMT Interface: Gi2
+  - MGMT Interface: GigabitEthernet2
   - MGMT IP: 192.168.102.11/24
   - Feature - Telnet & SSH: Enabled
 
@@ -97,7 +97,7 @@ Deploy 2 CSR1000v:
   - Router Name: VPN-PH
   - Login User: admin
   - Login Pass: pass
-  - MGMT Interface: Gi2
+  - MGMT Interface: GigabitEthernet2
   - MGMT IP: 192.168.102.12/24
   - Feature - Telnet & SSH: Enabled
 
