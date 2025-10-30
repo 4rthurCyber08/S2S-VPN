@@ -238,6 +238,8 @@ ping 10.21.21.213
 
 <br>
 
+> [!IMPORTANT]
+> Verify if the VM Interface matches the VMNet Attatchment
 ~~~
 !@NetOps
 nmcli connection add \
