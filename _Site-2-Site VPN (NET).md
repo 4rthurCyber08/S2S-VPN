@@ -135,7 +135,7 @@ Delpoy NetOps VM:
 - Network Adapter: NAT
 - Network Adapter 2: Bridged (Replicate)
 - Network Adapter 3: VMNet15
-- Network Adapter 4: Host-only
+- Network Adapter 4: VMNet16
 
 &nbsp;
 ---
