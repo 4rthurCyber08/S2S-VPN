@@ -1,4 +1,6 @@
 
+<!-- Your Monitor Number == #$34T# -->
+
 ## Prerequisite
 ### Setup Virtual Network Adapters
 `VMWare` > `Edit` > `Virtual Network Editor`  
@@ -242,6 +244,15 @@ ping 10.21.21.213
 > Verify if the VM Interface matches the VMNet Attatchment
 ~~~
 !@NetOps
+nmcli connection add \
+type ethernet \
+con-name TunayNaLAN \
+ifname ens192 \
+ipv4.method manual \
+ipv4.addresses 10.#$34T#.1.6/24 \
+autoconnect yes
+nmcli connection up TunayNaLAN
+
 nmcli connection add \
 type ethernet \
 con-name VMNET15 \
