@@ -1,3 +1,183 @@
+## Prerequisite
+### Setup Virtual Network Adapters
+`VMWare` > `Edit` > `Virtual Network Editor`  
+
+<br>
+
+Add/Edit the following VMNets:  
+
+| VMNet 2    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.102.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 3    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.103.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 4    |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 192.168.104.0 |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 
+
+<br>
+
+| VMNet 8    |               |
+| ---        | ---           |
+| VMNet Info | NAT           |
+| IP address | 208.8.8.0     |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Unchecked     | 	
+
+<br>
+
+| VMNet 15   |               |
+| ---        | ---           |
+| VMNet Info | Host-only     |
+| IP address | 10.255.10.0   |
+| Net Mask   | 255.255.255.0 |
+| DHCP       | Checked       | 
+
+<br>
+
+| VMNet 16   |                 |
+| ---        | ---             |
+| VMNet Info | Host-only       |
+| IP address | 10.69.255.0     |
+| Net Mask   | 255.255.255.248 |
+| DHCP       | Checked         | 
+	
+
+&nbsp;
+---
+&nbsp;
+
+### Deployment
+Note the following VM Files:
+- CSR1000v 17.x = VPN-EDGE
+- YVM-v6 = BLDG
+
+<br>
+
+Deploy 2 CSR1000v:
+1. __VPN-PH__
+- Name of Virtual Machine: VPN-PH
+- Deployment Options: Small
+- Bootstrap:
+  - Router Name: VPN-PH
+  - Login User: admin
+  - Login Pass: pass
+
+<br>
+
+- Network Adapter: NAT
+- Network Adapter 2: VMNet2
+- Network Adapter 3: VMNet3
+
+<br>
+
+2. VPN-JP
+- Name of Virtual Machine: VPN-JP
+- Deployment Options: Small
+- Bootstrap:
+  - Router Name: VPN-JP
+  - Login User: admin
+  - Login Pass: pass
+
+<br>
+
+- Network Adapter: NAT
+- Network Adapter 2: VMNet2
+- Network Adapter 3: VMNet4
+
+<br>
+<br>
+
+Deploy 2 YVM-v6
+1. BLDG-PH
+Name of Virtual Machine: BLDG-PH
+- Network Adapter: VMNet3
+
+<br>
+
+2. BLDG-JP-1
+Name of Virtual Machine: BLDG-JP-1
+- Network Adapter: VMNet4
+
+<br>
+
+3. BLDG-JP-2
+Name of Virtual Machine: BLDG-JP-2
+- Network Adapter: VMNet4
+
+<br>
+
+Delpoy NetOps VM:
+- Name: NetOps
+- Network Adapter: NAT
+- Network Adapter 2: Bridged (Replicate)
+- Network Adapter 3: Host-only
+- Network Adapter 4: Host-only
+
+&nbsp;
+---
+&nbsp;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 _____________________
 ********************* SETUP VMNETS
 
