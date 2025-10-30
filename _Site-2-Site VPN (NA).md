@@ -87,7 +87,7 @@ Deploy 2 CSR1000v:
 
 <br>
 
-2. VPN-JP
+2. __VPN-JP__
 - Name of Virtual Machine: VPN-JP
 - Deployment Options: Small
 - Bootstrap:
@@ -105,13 +105,13 @@ Deploy 2 CSR1000v:
 <br>
 
 Deploy 2 YVM-v6
-1. BLDG-PH
+1. __BLDG-PH__
 Name of Virtual Machine: BLDG-PH
 - Network Adapter: VMNet3
 
 <br>
 
-2. BLDG-JP
+2. __BLDG-JP__
 Name of Virtual Machine: BLDG-JP
 - Network Adapter: VMNet4
 
