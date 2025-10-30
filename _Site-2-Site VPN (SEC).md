@@ -1,3 +1,6 @@
+
+<!-- Your Monitor Number == #$34T# -->
+
 ## Prerequisite
 ### Setup Virtual Network Adapters
 `VMWare` > `Edit` > `Virtual Network Editor`  
@@ -134,135 +137,8 @@ Delpoy NetOps VM:
 ---
 &nbsp;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-_____________________
-********************* SETUP VMNETS
-
-
-VMWare > Edit > Virtual Network Editor
-
-Add/Edit the following VMNets:
-
-VMNet 2, 
-	VMNet Info: Host-only
-	IP address: 192.168.102.0
-	Subnet Mask: 255.255.255.0
-	DHCP: Unchecked
-
-VMNet 3, 
-	VMNet Info: Host-only
-	IP address: 192.168.103.0
-	Subnet Mask: 255.255.255.0
-	DHCP: Unchecked
-
-VMNet 4, 
-	VMNet Info: Host-only
-	IP address: 192.168.104.0
-	Subnet Mask: 255.255.255.0
-	DHCP: Unchecked
-	
-VMNet 8(NAT)
-	VMNet Info: NAT
-	IP address: 208.8.8.0
-	Subnet Mask: 255.255.255.0
-	DHCP: Checked
-	
-_____________________
-********************* DEPLOY CSRS AND LINUX
-
-Note the following VM Files:
-
-CSR1000v 17.x = VPN-EDGE
-YVM-v6 = BLDG
-
-
-Deploy 2 CSR1000v
-
-1. VPN-PH
-	Name of Virtual Machine: VPN-PH
-	Deployment Options: Small
-	Bootstrap:
-		Router Name: VPN-PH
-		Login User: admin
-		Login Pass: pass
-
-	Network Adapter: NAT
-	Network Adapter 2: VMNet2
-	Network Adapter 3: VMNet3
-		
-2. VPN-JP
-	Name of Virtual Machine: VPN-JP
-	Deployment Options: Small
-	Bootstrap:
-		Router Name: VPN-JP
-		Login User: admin
-		Login Pass: pass
-
-	Network Adapter: NAT
-	Network Adapter 2: VMNet2
-	Network Adapter 3: VMNet4
-
-Deploy 2 YVM-v6
-
-1. BLDG-PH
-	Name of Virtual Machine: BLDG-PH
-
-	Network Adapter: VMNet3
-	
-2. BLDG-JP-1
-	Name of Virtual Machine: BLDG-JP-1
-	
-	Network Adapter: VMNet4
-
-3. BLDG-JP-2
-  Name of Virtual Machine: BLDG-JP-2
-
-_____________________
-********************* CONFIGURE DEVICES
-
+### Configuration
+~~~
 !@VPN-PH
 conf t
  hostname VPN-PH
@@ -291,8 +167,11 @@ conf t
  ip http authentication local
  end
 wr
+~~~
 
+<br>
 
+~~~
 !@VPN-JP
 conf t
  hostname VPN-JP
@@ -322,45 +201,45 @@ conf t
  ip http authentication local
  end
 wr
+~~~
 
+<br>
 
+~~~
 !@BLDG-PH
 sudo su
 ifconfig eth0 11.11.11.100 netmask 255.255.255.224 up
 route add default gw 11.11.11.113
 ping 11.11.11.113
+~~~
 
+<br>
+
+~~~
 !@BLDG-JP-1
 sudo su
 ifconfig eth0 21.21.21.211 netmask 255.255.255.240 up
 route add default gw 21.21.21.213
 ping 21.21.21.213
+~~~
 
+<br>
+
+~~~
 !@BLDG-JP-2
 sudo su
 ifconfig eth0 22.22.22.221 netmask 255.255.255.192 up
 route add default gw 22.22.22.223
 ping 22.22.22.223
+~~~
 
-_____________________
-********************* ACCESS VPN WEB GUI
+<br>
 
-Open a browser and enter the Gig2 IP address of the VPN.
+### Access WEB GUI
+Open a browser and enter the Gig2 IP address of the VPN.  
 
-http://192.168.102.11/
-
-http://192.168.102.12/
-
-
-
-
-
-
-
-
-
-
-
+- http://192.168.102.11/
+- http://192.168.102.12/
 
 <br>
 <br>
@@ -369,22 +248,6 @@ http://192.168.102.12/
 &nbsp;
 
 ## Site-to-Site VPN (Signature) - ROOT CA
-Deploy the following VMs:
-- NetOps
-
-| VM        | NetAdapter | NetAdapter 2       | NetAdapter 3 | NetAdapter 4 |
-| ---       | ---        | ---                | ---          | ---          |
-| VPN-PH    | NAT        | Bridge (Replicate) | Host-Only    | Host-Only    |
-
-<br>
-
-Login: root  
-Pass: C1sc0123  
-
-&nbsp;
----
-&nbsp;
-
 ### 01. Identify the NAT IP & connect via SecureCRT
 ~~~
 !@NetOps
@@ -398,11 +261,12 @@ ip -4 addr
 ### 02. Set a static IP address to connect to the LAN
 ~~~
 !@NetOps
-nmcli connection add type ethernet con-name TunayNaLAN \
+nmcli connection add \
+type ethernet \
+con-name TunayNaLAN \
 ifname ens192 \
 ipv4.method manual \
-ipv4.addresses \
-10.#$34T#.1.6/24 \
+ipv4.addresses 10.#$34T#.1.6/24 \
 autoconnect yes
 
 nmcli connection up TunayNaLAN
