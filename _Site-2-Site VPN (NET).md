@@ -333,11 +333,6 @@ ssh -l root 10.m.1.6/24
 
 <br>
 
-&nbsp;
----
-&nbsp;
-
-### FINGERPRINT
 ~~~
 The authenticity of host '10.91.1.6 (10.91.1.6)' can't be established.
 ED25519 key fingerprint is SHA256:K1lJBH2lpRJ3UkDLhvobaAwCMwPaCcQuWB5bIb8heBg.
