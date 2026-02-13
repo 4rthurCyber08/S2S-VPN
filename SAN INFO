@@ -1,0 +1,28 @@
+Retain SAN
+
+VPN:
+X509v3 Extended Key Usage:
+IPSec End System, IPSec Tunnel, IPSec User, IP security end entity
+X509v3 Subject Alternative Name:
+IP Address:208.8.8.12
+X509v3 Key Usage critical:
+Digital Signature, Key Encipherment
+
+
+FTP
+X509v3 Basic Constraints critical:
+CA:FALSE
+X509v3 Subject Key Identifier:
+EC:86:7A:52:B8:73:ED:5D:96:80:A7:FD:12:A5:B9:B9:7D:75:F9:9D
+X509v3 Authority Key Identifier:
+FF:C9:CF:F3:2D:60:86:92:E5:A2:B8:6F:F3:CE:F4:EB:4D:C2:B1:25
+X509v3 Key Usage:
+Digital Signature, Key Encipherment, Data Encipherment, Key Agreement
+X509v3 Extended Key Usage:
+TLS Web Server Authentication, TLS Web Client Authentication
+X509v3 Subject Alternative Name:
+DNS:ftp.rivanjp.com, IP Address:21.21.21.211
+Netscape Cert Type:
+SSL Client, SSL Server, S/MIME
+Netscape Comment:
+xca certificate
