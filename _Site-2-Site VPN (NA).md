@@ -221,3 +221,20 @@ Open a browser and enter the Gig2 IP address of the VPN.
 - http://192.168.102.11/
 
 - http://192.168.102.12/
+
+
+&nbsp;
+---
+&nbsp;
+
+
+### Create Accounts in Linux
+
+~~~
+!@BLDH-PH, BLDG-JP
+sudo su
+adduser admin
+
+> pass
+> pass
+~~~
