@@ -72,74 +72,61 @@ Add/Edit the following VMNets:
 ---
 &nbsp;
 
-### Deployment
-Note the following VM Files:
-- CSR1000v 17.x = VPN-EDGE
-- YVM-v6 = BLDG
 
-<br>
+## Lab Setup
 
-Deploy 2 CSR1000v:
-1. __VPN-PH__
-- Name of Virtual Machine: VPN-PH
-- Deployment Options: Small
-- Bootstrap:
-  - Router Name: VPN-PH
-  - Login User: admin
-  - Login Pass: pass
-  - MGMT Interface: GigabitEthernet2
-  - MGMT IP: 192.168.102.11/24
-  - Feature - Telnet & SSH: Enabled
+### 1. Deploy
 
-<br>
+Devices:
+- 2x CSR1000v
+- 2x TinyCore (yvm.ova)
 
-- Network Adapter: NAT
-- Network Adapter 2: VMNet2
-- Network Adapter 3: VMNet3
+CSR1000v:
+  Name: UTM-PH
+  
+  | NetAdapter   |        |
+  | ---          | ---    |
+  | NetAdapter   | NAT    |
+  | NetAdapter 2 | VMNet2 |
+  | NetAdapter 3 | VMNet3 |
+  
 
-<br>
+CSR1000v:
+  Name: UTM-JP
+  
+  | NetAdapter   |        |
+  | ---          | ---    |
+  | NetAdapter   | NAT    |
+  | NetAdapter 2 | VMNet2 |
+  | NetAdapter 3 | VMNet4 |
+  
 
-2. __VPN-JP__
-- Name of Virtual Machine: VPN-JP
-- Deployment Options: Small
-- Bootstrap:
-  - Router Name: VPN-PH
-  - Login User: admin
-  - Login Pass: pass
-  - MGMT Interface: GigabitEthernet2
-  - MGMT IP: 192.168.102.12/24
-  - Feature - Telnet & SSH: Enabled
+TinyCore (yvm.ova):
+  Name: BLDG-PH-1
+  
+  | NetAdapter   |                    |
+  | ---          | ---                |
+  | NetAdapter   | VMNet3             |
 
-<br>
 
-- Network Adapter: NAT
-- Network Adapter 2: VMNet2
-- Network Adapter 3: VMNet4
+TinyCore (yvm.ova):
+  Name: BLDG-JP-1
+  
+  | NetAdapter   |                    |
+  | ---          | ---                |
+  | NetAdapter   | VMNet4             |
 
-<br>
-<br>
-
-Deploy 2 YVM-v6
-1. __BLDG-PH__
-- Name of Virtual Machine: BLDG-PH
-- Network Adapter: VMNet3
-
-<br>
-
-2. __BLDG-JP__
-- Name of Virtual Machine: BLDG-JP
-- Network Adapter: VMNet4
 
 &nbsp;
 ---
 &nbsp;
 
-### Configuration
 
+### 2. Bootstrap
 ~~~
-!@VPN-PH
+!@UTM-PH
 conf t
- hostname VPN-PH
+ hostname UTM-PH
  enable secret pass
  service password-encryption
  no logging cons
@@ -156,7 +143,7 @@ conf t
   ip add 192.168.102.11 255.255.255.0
   no shut
  int g3
-  ip add 10.10.10.11 255.255.255.0
+  ip add 11.11.11.113 255.255.255.224
   no shut
  !
  username admin privilege 15 secret pass
@@ -165,14 +152,15 @@ conf t
  ip http authentication local
  end
 wr
+!
 ~~~
 
 <br>
 
 ~~~
-!@VPN-JP
+!@UTM-JP
 conf t
- hostname VPN-JP
+ hostname UTM-JP
  enable secret pass
  service password-encryption
  no logging cons
@@ -189,7 +177,7 @@ conf t
   ip add 192.168.102.12 255.255.255.0
   no shut
  int g3
-  ip add 20.20.20.12 255.255.255.0
+  ip add 21.21.21.213 255.255.255.240
   no shut
  !
  username admin privilege 15 secret pass
@@ -198,31 +186,34 @@ conf t
  ip http authentication local
  end
 wr
+!
 ~~~
 
 <br>
 
 ~~~
-@BLDG-PH
+!@BLDG-PH-1
 sudo su
-ifconfig eth0 10.10.10.10 netmask 255.255.255.0 up
-route add default gw 10.10.10.11
-ping 10.10.10.11
+ifconfig eth0 11.11.11.100 netmask 255.255.255.224 up
+route add default gw 11.11.11.113
+ping 11.11.11.113
 ~~~
 
 <br>
 
 ~~~
-@BLDG-JP
+!@BLDG-JP-1
 sudo su
-ifconfig eth0 20.20.20.20 netmask 255.255.255.0 up
-route add default gw 20.20.20.12
-ping 20.20.20.12
+ifconfig eth0 21.21.21.211 netmask 255.255.255.240 up
+route add default gw 21.21.21.213
+ping 21.21.21.213
 ~~~
+
 
 &nbsp;
 ---
 &nbsp;
+
 
 ### Access WEB GUI
 Open a browser and enter the Gig2 IP address of the VPN.  
