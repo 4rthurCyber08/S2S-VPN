@@ -1,7 +1,8 @@
 
 <!-- Your Monitor Number == #$34T# -->
 
-## Prerequisite
+
+## Prereq
 ### Setup Virtual Network Adapters
 `VMWare` > `Edit` > `Virtual Network Editor`  
 
@@ -60,88 +61,52 @@ Add/Edit the following VMNets:
 | IP address | 10.69.255.0     |
 | Net Mask   | 255.255.255.248 |
 | DHCP       | Checked         | 
-	
+
 
 &nbsp;
 ---
 &nbsp;
 
-### Deployment
-Note the following VM Files:
-- CSR1000v 17.x = VPN-EDGE
-- YVM-v6 = BLDG
+
+## Lab Setup
+
+### 1. Deploy
+
+Devices:
+- 2x CSR1000v
+- 2x TinyCore (yvm.ova)
+- NetOps  
+
 
 <br>
 
-Deploy 2 CSR1000v:
-1. __VPN-PH__
-- Name of Virtual Machine: VPN-PH
-- Deployment Options: Small
-- Bootstrap:
-  - Router Name: VPN-PH
-  - Login User: admin
-  - Login Pass: pass
 
-<br>
+| VM        | NetAdapter | NetAdapter 2 | NetAdapter 3 | NetAdapter 4  |
+| ---       | ---        | ---          | ---          | ---           |
+| UTM-PH    | NAT        | VMNet2       | VMNet3       | Bridged (Rep) |
+|           |            |              |              |               |
+| UTM-JP    | NAT        | VMNet2       | VMNet4       |               |
+|           |            |              |              |               |
+| NetOps-PH | VMNet1     | VMNet2       | VMNet3       | Bridged (Rep) |
+|           |            |              |              |               |
+| BLDG-PH   | VMNet3     | VMNet2       |              |               |
+|           |            |              |              |               |
+| BLDG-JP-1 | VMNet4     |              |              |               |
+|           |            |              |              |               |
+| BLDG-JP-2 | VMNet4     |              |              |               |
+|           |            |              |              |               |
 
-- Network Adapter: NAT
-- Network Adapter 2: VMNet2
-- Network Adapter 3: VMNet3
-
-<br>
-
-2. VPN-JP
-- Name of Virtual Machine: VPN-JP
-- Deployment Options: Small
-- Bootstrap:
-  - Router Name: VPN-JP
-  - Login User: admin
-  - Login Pass: pass
-
-<br>
-
-- Network Adapter: NAT
-- Network Adapter 2: VMNet2
-- Network Adapter 3: VMNet4
-
-<br>
-<br>
-
-Deploy 2 YVM-v6
-1. BLDG-PH
-Name of Virtual Machine: BLDG-PH
-- Network Adapter: VMNet3
-
-<br>
-
-2. BLDG-JP-1
-Name of Virtual Machine: BLDG-JP-1
-- Network Adapter: VMNet4
-
-<br>
-
-3. BLDG-JP-2
-Name of Virtual Machine: BLDG-JP-2
-- Network Adapter: VMNet4
-
-<br>
-
-Delpoy NetOps VM:
-- Name: NetOps
-- Network Adapter: NAT
-- Network Adapter 2: Bridged (Replicate)
-- Network Adapter 3: Host-only
-- Network Adapter 4: Host-only
 
 &nbsp;
 ---
 &nbsp;
 
-### Configuration
+
+### 2. Bootstrap
 ~~~
-!@VPN-PH
+!@UTM-PH
 conf t
- hostname VPN-PH
+ hostname UTM-PH
  enable secret pass
  service password-encryption
  no logging cons
@@ -167,14 +132,15 @@ conf t
  ip http authentication local
  end
 wr
+!
 ~~~
 
 <br>
 
 ~~~
-!@VPN-JP
+!@UTM-JP
 conf t
- hostname VPN-JP
+ hostname UTM-JP
  enable secret pass
  service password-encryption
  no logging cons
@@ -182,7 +148,7 @@ conf t
  line vty 0 14
   transport input all
   password pass
-  login local 
+  login local
   exec-timeout 0 0
  int g1
   ip add 208.8.8.12 255.255.255.0
@@ -194,6 +160,11 @@ conf t
   ip add 21.21.21.213 255.255.255.240
   ip add 22.22.22.223 255.255.255.192 secondary
   no shut
+  exit
+ !
+ ip route 0.0.0.0 0.0.0.0 208.8.8.2
+ ip domain lookup
+ ip name-server 8.8.8.8 1.1.1.1
  !
  username admin privilege 15 secret pass
  ip http server
@@ -201,16 +172,27 @@ conf t
  ip http authentication local
  end
 wr
+!
 ~~~
 
 <br>
 
 ~~~
-!@BLDG-PH
+!@BLDG-PH-1
 sudo su
 ifconfig eth0 11.11.11.100 netmask 255.255.255.224 up
+ifconfig eth1 192.168.102.100 netmask 255.255.255.0 up
 route add default gw 11.11.11.113
 ping 11.11.11.113
+~~~
+
+Create a user account:
+~~~
+!@BLDG-PH-1
+adduser admin
+
+> pass
+> pass
 ~~~
 
 <br>
@@ -233,55 +215,100 @@ route add default gw 22.22.22.223
 ping 22.22.22.223
 ~~~
 
+
 <br>
+<br>
+
+
+## NetOps-PH Setup
+> Login: root
+> Pass: C1sc0123
+
+<br>
+
+### 1. Get the MAC Address for the Bridge connection
+VMWare > NetOps-PH Settings > NetAdapter (2, 3, & 4) > Advance > MAC Address
+
+| NetAdapter   | MAC Address      | VM Interface |           |
+| ---          | ---              | ---          | ---       |
+| NetAdapter 2 | ___.___.___.___  | ens___       |  ens192   |
+| NetAdapter 3 | ___.___.___.___  | ens___       |  ens224   |
+| NetAdapter 4 | ___.___.___.___  | ens___       |  ens256   |
+
+
+<br>
+
+
+### 2. Get Network-VM Mapping
+
+~~~
+!@NetOps-PH
+ip -br link
+~~~
+
+
+<br>
+
+
+### 3. Modify Interface IP
+
+__Using Network Management CLI for persistent IP.__
+
+~~~
+!@NetOps-PH
+nmcli connection add \
+type ethernet \
+con-name VMNET2 \
+ifname ens192 \
+ipv4.method manual \
+ipv4.addresses 192.168.102.6/24 \
+autoconnect yes
+
+nmcli connection up VMNET2
+
+
+nmcli connection add \
+type ethernet \
+con-name VMNET3 \
+ifname ens224 \
+ipv4.method manual \
+ipv4.addresses 11.11.11.100/27 \
+autoconnect yes
+
+nmcli connection up VMNET3
+
+
+nmcli connection add \
+type ethernet \
+con-name BRIDGED \
+ifname ens256 \
+ipv4.method manual \
+ipv4.addresses 10.#$34T#.1.6/24 \
+autoconnect yes
+
+nmcli connection up BRIDGED
+
+
+ip route add 10.0.0.0/8 via 10.#$34T#.1.4 dev ens256
+ip route add 200.0.0.0/24 via 10.#$34T#.1.4 dev ens256
+ip route add 0.0.0.0/0 via 11.11.11.113 dev ens224
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp; 
+
 
 ### Access WEB GUI
 Open a browser and enter the Gig2 IP address of the VPN.  
 
 - http://192.168.102.11/
+
 - http://192.168.102.12/
 
-<br>
-<br>
-
----
-&nbsp;
-
-## Site-to-Site VPN (Signature) - ROOT CA
-### 01. Identify the NAT IP & connect via SecureCRT
-~~~
-!@NetOps
-ip -4 addr
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 02. Set a static IP address to connect to the LAN
-~~~
-!@NetOps
-nmcli connection add \
-type ethernet \
-con-name TunayNaLAN \
-ifname ens192 \
-ipv4.method manual \
-ipv4.addresses 10.#$34T#.1.6/24 \
-autoconnect yes
-
-nmcli connection up TunayNaLAN
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 03. Set static routes
-~~~
-!@NetOps
-ip route add 10.0.0.0/8 via 10.#$34T#.1.4
-ip route add 200.0.0.0/24 via 10.#$34T#.1.4
-~~~
 
 <br>
 <br>
@@ -289,55 +316,120 @@ ip route add 200.0.0.0/24 via 10.#$34T#.1.4
 ---
 &nbsp;
 
-### Activity 02: Create a Selfsigned Certificate with the following subject names:
-For the CA (NetOps)
-- Country Name [XX]:                         PH
-- State or Province Name []:                 NCR
-- Locality Name [Default City]:              Makati
-- Organization Name [Default Company Ltd]:   Rivancorp
-- Organizational Unit Name (eg, section) []: HQ
-- Common Name []:                            rivan.com
-- Email Address []:                          admin@rivancorp.com
-- Subject Alt Names:                         rivan.com  www.rivan.com  api.rivan.com  10.#$34T#.1.6
 
-&nbsp;
+# Certificates
+
+## CA Hierarchy
+
+1. ROOT CA
+   - X509v3
+   - Basic Constraints [Critical]
+       CA
+   - Key Usage [Critical]
+       Certificate Sign
+       CRL Sign
+
+<br>
+
+
+2. SUB CA
+   - X509v3
+   - Basic Constraints [Critical]
+       CA
+	   Path Len: 0
+   - Key Usage [Critical]
+       Certificate Sign
+       CRL Sign
+
+<br>
+
+
+3. LEAF CA
+   - X509v3
+   - Basic Constraints [Critical]
+       END-ENTITY
+   - Extensions
+       Subject Alt Names
+   - Key Usage [Critical]
+       Digital Signature
+	   Key Encipherment
+	   Data Encipherment
+	   Key Agreement
+   - Extended Key Usage
+       TLS Web Server Authentication
+       TLS Web Client Authentication	   
+	   E-mail Protection
+	   IPSec End System
+	   IPSec Tunnel
+	   IPSec User
+	   IP Security end entity
+
+
+&nbsp; 
 ---
-&nbsp;
+&nbsp; 
 
-### 01. Create a directory for the certstore
-~~~
-!@NetOps
-mkdir certstore
-cd certstore
-~~~
 
-&nbsp;
----
-&nbsp;
+## Certificates via OPENSSL
 
-### 02. Create a Private key with a Selfsigned Certificate (SSH keys:ssh-keygen vs TLS/SSL keys:openssl)
+__IF USING TINYCORE FOR CA GENERATION__
 ~~~
-!@NetOps
-openssl req -x509 -newkey rsa:2048 -days 365 -keyout rivan.key -out ca-rivan.crt -nodes
+!@BLDG-PH
+mkdir certs; cd certs
 ~~~
 
 <br>
 
-Verify the certificate  
-
 ~~~
-!@NetOps
-openssl x509 -in ca-rivan.crt -text -noout
+!@BLDG-PH
+vi /etc/resolve.conf
+
+
+nameserver 8.8.8.8
 ~~~
 
-&nbsp;
+<br>
+
+EXIT OUT OF SUDO
+~~~
+!@BLDG-PH
+tce-load -wi nano
+echo nano.tcz >> /mnt/sda1/tce/onboot.lst
+~~~
+
+<br>
+<br>
+
+
+### STEP 1 - Creating Private Keys
+
+__ROOT CA__
+~~~
+!@Linux
+openssl genrsa -aes256 -out ca.key 2048
+~~~
+
+<br>
+
+__INTERMEDIATE CA__
+~~~
+!@Linux
+openssl genrsa -aes256 -out subca.key 2048
+~~~
+
+
+<br>
+<br>
+
 ---
 &nbsp;
 
-### 03. Create a configuration file to specify subject alternate names.
+### STEP 2 - Create an OPENSSL Configuration File for both the __ROOT CA__ & __INTERMEDIATE CA__
+
+__ROOT CA__
 ~~~
-!@NetOps
-nano ext.cnf
+!@Linux
+nano ca.cnf
 ~~~
 
 <br>
@@ -345,124 +437,37 @@ nano ext.cnf
 ~~~
 [ req ]
 default_bits       = 2048
-distinguished_name = req_distinguished_name
-x509_extensions    = v3_req
+default_md         = sha256
 prompt             = no
+distinguished_name = dn
+x509_extensions    = v3_ca
 
-[ req_distinguished_name ]
+
+[ dn ]
 C  = PH
 ST = NCR
-L  = Makati
+L  = Manila
 O  = Rivancorp
 OU = HQ
-CN = RivanCorporation
+CN = Rivancorp Root CA
 
-[ v3_req ]
-subjectAltName = @alt_names
 
-[ alt_names ]
-DNS.1   = rivan.com
-DNS.2   = www.rivan.com
-DNS.3   = api.rivan.com
-IP.1    = 10.#$34T#.1.6
+[ v3_ca ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints       = critical, CA:TRUE
+keyUsage               = critical, keyCertSign, cRLSign
 ~~~
 
-&nbsp;
----
-&nbsp;
-
-### 04. Generate root CA with subject alt names
-~~~
-!@NetOps
-openssl req -x509 -newkey rsa:2048 -days 365 -keyout rivan.key -out ca-rivan.crt -nodes -config ext.cnf -extensions v3_req
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 05. Import CA to Cisco Devices
-~~~
-!@VPN-PH
-conf t
- crypto pki trustpoint rivantrust
-  enrollment terminal pem
-  hash sha512
-  subject-name CN=siteph.rivan.com, C=PH, ST=NCR, L=Makati, O=Rivancorp, OU=SitePH, E=siteph@rivancorp.com
-  subject-alt-name siteph.rivan.com
-  subject-alt-name ph.rivan.com
-  storage nvram: 
-  primary
-  revocation-check none
-  rsakeypair rivankeys
-  exit
- crypto pki authenticate rivantrust
-> Paste the CA
-~~~
 
 <br>
-
-~~~
-!@VPN-JP
-conf t
- crypto pki trustpoint rivantrust
-  enrollment terminal pem
-  hash sha512
-  subject-name CN=siteph.rivan.com, C=JP, ST=Kanto, L=Tokyo, O=Rivancorp, OU=SiteJP, E=sitejp@rivancorp.com
-  subject-alt-name sitejp.rivan.com
-  subject-alt-name jp.rivan.com
-  storage nvram: 
-  primary
-  revocation-check none
-  rsakeypair rivankeys
-  exit
- crypto pki authenticate rivantrust
-> Paste the CA
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 06. Generate a CSR for both Routers
-~~~
-!@VPN-PH, VPN-JP
-crypto pki enroll rivantrust
-
-> Outputs a CSR . Must be signed by the CA
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 07. Import the CSR to the CA Server (NetOps)
-~~~
-!@NetOps
-nano req-ph.pem
-> paste VPN-PH's CSR
-> ctrl + s (save)
-> ctrl + x (exit)
-~~~
-
 <br>
 
-~~~
-!@NetOps
-nano req-jp.pem
-> paste VPN-JP's CSR
-> ctrl + s (save)
-> ctrl + x (exit
-~~~
 
-&nbsp;
----
-&nbsp;
-
-8. Create Configuration files for each VPN Routers
+__INTERMEDIATE CA__
 ~~~
-!@NetOps
-nano vpnph.cnf
+!@Linux
+nano subca.cnf
 ~~~
 
 <br>
@@ -470,214 +475,627 @@ nano vpnph.cnf
 ~~~
 [ req ]
 default_bits       = 2048
-distinguished_name = req_distinguished_name
-x509_extensions    = v3_req
+default_md         = sha256
 prompt             = no
+distinguished_name = dn
+x509_extensions    = v3_subca
 
-[ req_distinguished_name ]
+
+[ dn ]
 C  = PH
 ST = NCR
 L  = Makati
 O  = Rivancorp
-OU = SitePH
-CN = RivanCorpPH
+OU = Makati Branch
+CN = Rivancorp Intermediate CA
 
-[ v3_req ]
-subjectAltName = @alt_names
+
+[ v3_subca ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints       = critical, CA:TRUE, pathlen:0
+keyUsage               = critical, keyCertSign, cRLSign
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+### STEP 3 - Output the __ROOT CA__
+
+__ROOT CA__
+~~~
+!@Linux
+openssl req \
+  -new -x509 \
+  -key ca.key \
+  -out ca.crt \
+  -days 3650 \
+  -extensions v3_ca \
+  -config ca.cnf
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+### STEP 4 - Generate CSR for the __INTERMEDIATE CA__
+
+__INTERMEDIATE CA__
+~~~
+!@Linux
+openssl req \
+  -new \
+  -key subca.key \
+  -out subca.csr
+~~~
+
+<br>
+
+~~~
+Country Name (2 letter code) [XX]:                             PH
+State or Province Name (full name) []:                         NCR
+Locality Name (eg, city) [Default City]:                       Makati
+Organization Name (eg, company) [Default Company Ltd]:         Rivancorp
+Organizational Unit Name (eg, section) []:                     Makati Branch
+Common Name (eg, your name or your server's hostname) []:      Rivancorp Intermediate CA
+
+
+A challenge password []:                                       pass
+An optional company name []:                                   
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+### STEP 5 - Sign the CSR using the __ROOT CA__
+
+~~~
+!@Linux
+openssl x509 \
+  -req \
+  -in subca.csr \
+  -CA ca.crt \
+  -CAkey ca.key \
+  -CAcreateserial \
+  -out subca.crt \
+  -days 365 \
+  -extensions v3_subca \
+  -extfile subca.cnf
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+### STEP 6 - Install the __ROOT CA__ & __INTERMEDIATE CA__ on Devices
+
+__LINUX__
+~~~
+!@Linux
+cp  ca.crt    /etc/pki/ca-trust/source/anchors/
+cp  subca.crt    /etc/pki/ca-trust/source/
+~~~
+
+<br>
+
+~~~
+!@Linux
+update-ca-trust enable
+update-ca-trust
+~~~
+
+<br>
+
+
+Verify
+~~~
+!@Linux
+trust list | grep -i "Rivancorp"
+
+openssl x509 -in utmph.crt -noout -issuer -subject
+~~~
+
+
+<br>
+<br>
+
+
+__WINDOWS__
+~~~
+!@Run
+certlm.msc
+~~~
+
+<br>
+
+Certificates 
+  > Trusted Root Certification Authorities (Right-Click) 
+    > All Tasks 
+	  > Import
+
+<br>
+
+Certificates 
+  > Intermediate Certification Authorities (Right-Click) 
+    > All Tasks 
+	  > Import
+
+
+<br>
+<br>
+
+
+__CISCO__
+~~~
+!@Cisco
+conf t
+ crypto pki trustpoint RIVAN-CA
+  enrollment terminal
+  revocation-check crl none
+  exit
+ !
+ crypto pki authenticate RIVAN-CA
+
+ > Paste the CA
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+### STEP 7 - Generate __LEAF CERTS__ or __END ENTITY CERTS__
+
+__LINUX__  
+~~~
+!@Linux
+openssl genrsa -aes256 -out utmph.key 2048
+~~~
+
+<br>
+
+~~~
+!@Linux
+nano utmph.cnf 
+~~~
+
+<br>
+
+~~~
+[ req ]
+default_bits       = 2048
+default_md         = sha256
+distinguished_name = dn
+req_extensions     = v3_leaf_req
+prompt             = no
+
+[ dn ]
+C  = PH
+ST = NCR
+L  = Makati
+O  = Rivancorp
+OU = Makati Branch
+CN = ph.rivancorp.com
+
+[ v3_leaf_req ]
+basicConstraints    = critical, CA:false
+keyUsage            = critical, digitalSignature, keyEncipherment
+extendedKeyUsage    = serverAuth, clientAuth, ipsecEndSystem, ipsecTunnel, ipsecUser, ipsecIKE
+subjectAltName      = @alt_names
 
 [ alt_names ]
-DNS.1   = rivan.ph
-DNS.2   = www.rivan.ph
-DNS.3   = api.rivan.ph
+DNS.1   = utmph.rivancorp.com
 IP.1    = 208.8.8.11
 ~~~
 
 <br>
 
 ~~~
-!@NetOps
-nano vpnjp.cnf
-###########
+!@Linux
+openssl req \
+  -new \
+  -key utmph.key \
+  -out utmph.csr \
+  -config utmph.cnf
+~~~
 
+<br>
+
+~~~
+!@NetOps
+openssl x509 \
+  -req \
+  -in utmph.csr \
+  -CA subca.crt \
+  -CAkey subca.key \
+  -CAcreateserial \
+  -out utmph.crt \
+  -days 30 \
+  -extensions v3_leaf_req \
+  -extfile utmph.cnf
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+__WINDOWS__
+~~~
+!@Run
+certlm.msc
+~~~
+
+<br>
+
+Certificates   
+  > Personal (Right-Click)   
+    > All Tasks   
+	  > Advance Operations   
+	    > Create Custom Request  
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+__CISCO__
+
+~~~
+!@UTM-PH
+conf t
+ crypto key generate rsa modulus 2048 label RIVANPH-KEY exportable
+ end
+~~~
+
+<br>
+
+~~~
+!@UTM-PH
+conf t
+ crypto pki trustpoint RIVAN-PH
+  enrollment terminal
+  revocation-check crl none
+  rsakeypair RIVANPH-KEY
+  exit
+ !
+ 
+ 
+ crypto pki authenticate RIVAN-PH
+ 
+ 
+ crypto pki enroll RIVAN-PH
+ 
+~~~
+
+<br>
+
+
+-----BEGIN CERTIFICATE REQUEST-----
+
+-----END CERTIFICATE REQUEST-----
+
+
+<br>
+
+
+~~~
+!@NetOps
+openssl x509 \
+  -req \
+  -in utmph.csr \
+  -CA subca.crt \
+  -CAkey subca.key \
+  -CAcreateserial \
+  -out utmph.crt \
+  -days 30 \
+  -extensions v3_leaf_req \
+  -extfile utmph.cnf
+~~~
+
+
+<br>
+
+
+~~~
+!@UTM-PH
+conf t
+ crypto pki import RIVAN-PH certificate
+ 
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+### ACTIVITY - Issue A Certificate for RIVAN-JP
+
+~~~
+!@Linux
+nano utmjp.cnf 
+~~~
+
+<br>
+
+~~~
 [ req ]
 default_bits       = 2048
-distinguished_name = req_distinguished_name
-x509_extensions    = v3_req
+default_md         = sha256
+distinguished_name = dn
+req_extensions     = v3_leaf_req
 prompt             = no
 
-[ req_distinguished_name ]
+[ dn ]
 C  = JP
 ST = Kanto
 L  = Tokyo
 O  = Rivancorp
-OU = SiteJP
-CN = RivanCorpJP
+OU = Tokyo Branch
+CN = jp.rivancorp.com
 
-[ v3_req ]
-subjectAltName = @alt_names
+[ v3_leaf_req ]
+basicConstraints    = critical, CA:false
+keyUsage            = critical, digitalSignature, keyEncipherment
+extendedKeyUsage    = serverAuth, clientAuth, ipsecEndSystem, ipsecTunnel, ipsecUser, ipsecIKE
+subjectAltName      = @alt_names
 
 [ alt_names ]
-DNS.1   = rivan.jp
-DNS.2   = www.rivan.jp
-DNS.3   = api.rivan.jp
+DNS.1   = utmjp.rivancorp.com
 IP.1    = 208.8.8.12
 ~~~
 
-&nbsp;
----
-&nbsp;
-
-### 08. Sign the CSRs
-~~~
-!@NetOps
-openssl x509 -req -in req-ph.pem -CA ca-rivan.crt -CAkey rivan.key -out signed-ph.pem -extfile vpnph.cnf -extensions v3_req
-openssl x509 -req -in req-jp.pem -CA ca-rivan.crt -CAkey rivan.key -out signed-jp.pem -extfile vpnjp.cnf -extensions v3_req
-~~~
-
-<br>
 
 ~~~
-!@NetOps
-cat signed-ph.pem
-cat signed-jp.pem
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 09. Import the signed CSRs
-~~~
-!@VPN-PH, VPN-JP
+!@UTM-JP
 conf t
- crypto pki import rivantrust certificate
-
-> Paste the signed CSR
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### Verify Cisco Certificates and Trustpoints
-~~~
-!@VPNs
-show crypto pki certificates
-show crypto pki trustpoint
-~~~
-
-<br>
-<br>
-
----
-&nbsp;
-
-## Site-to-Site VPN (Sign)
-
-### 01. GRE Tunnel
-~~~
-!@VPN-PH
-conf t
- int tun1
-  ip add 172.16.10.1 255.255.255.0
-  tunnel source g1
-  tunnel destination 208.8.8.12
-  tunnel mode gre ip
-  end
-~~~
-
-<br>
-
-~~~
-!@VPN-JP
-conf t
- int tun1
-  ip add 172.16.10.2 255.255.255.0
-  tunnel source g1
-  tunnel destination 208.8.8.11
-  tunnel mode gre ip
-  end
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 02. Routing Interesting traffic
-~~~
-!@VPN-PH
-conf t
- ip route 21.21.21.208 255.255.255.240 172.16.10.2
- ip route 22.22.22.192 255.255.255.192 172.16.10.2
+ crypto key generate rsa modulus 2048 label RIVANJP-KEY exportable
  end
 ~~~
 
 <br>
 
 ~~~
-!@VPN-JP
+!@UTM-JP
 conf t
- ip route 11.11.11.96 255.255.255.224 172.16.10.1
- end
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 03. Configure ISAKMP Policy
-~~~
-!@VPN-PH, VPN-JP
-conf t
- crypto isakmp policy 1
-  authentication rsa-sig
-  encryption aes 256
-  hash sha512
-  group 14
-  end
-~~~
-
-&nbsp;
----
-&nbsp;
-
-### 04. Configure IPSec Profile
-~~~
-!@VPN-PH, VPN-JP
-conf t
- crypto ipsec transform-set IPSECTUNNEL esp-aes 256 esp-sha-hmac
-  mode transport
+ crypto pki trustpoint RIVAN-JP
+  enrollment terminal
+  revocation-check crl none
+  rsakeypair RIVANJP-KEY
   exit
- crypto ipsec profile RIVAN
-  set transform-set IPSECTUNNEL
-  set pfs group14
-  end
+ !
+ 
+ 
+ crypto pki authenticate RIVAN-JP
+ 
+ 
+ crypto pki enroll RIVAN-JP
+ 
 ~~~
 
-&nbsp;
+<br>
+
+
+-----BEGIN CERTIFICATE REQUEST-----
+
+-----END CERTIFICATE REQUEST-----
+
+
+<br>
+
+
+~~~
+!@NetOps
+openssl x509 \
+  -req \
+  -in utmjp.csr \
+  -CA subca.crt \
+  -CAkey subca.key \
+  -CAcreateserial \
+  -out utmjp.crt \
+  -days 30 \
+  -extensions v3_leaf_req \
+  -extfile utmjp.cnf
+~~~
+
+
+<br>
+
+
+~~~
+!@UTM-JP
+conf t
+ crypto pki import RIVAN-JP certificate
+ 
+~~~
+
+
+<br>
+<br>
+
 ---
 &nbsp;
 
-### 05. Apply IPSec Profile Protection to Tunnel
+
+## Site to Site VPN (via RSA-SIG Authentication)
+
+### STEP 1 - PHASE 1 (IKEv2)
+
 ~~~
-!@VPN-PH, VPN-JP
+!@UTM-PH
 conf t
- int tunnel 1
-  tunnel protection ipsec profile RIVAN 
+ crypto ikev2 proposal IKEV2-PROP
+  encryption __-__-__
+  integrity __
+  group __
+ !
+ crypto ikev2 policy IKEV2-POL
+  proposal IKEV2-PROP
+ !
+ ! crypto ikev2 keyring VPN-KEYRING
+  ! peer RIVANJP-PEER
+  !  address __.__.__.__
+  !  pre-shared-key _________
+ !
+ crypto ikev2 profile IKEV2-PROF
+  match identity remote address __.__.__.__  __.__.__.__
+  authentication remote rsa-sig
+  authentication local rsa-sig
+  pki trustpoint RIVAN-PH
+  ! keyring local VPN-KEYRING
+   end
+~~~
+
+
+<br>
+
+
+~~~
+!@UTM-JP
+conf t
+ crypto ikev2 proposal IKEV2-PROP
+  encryption __-__-__
+  integrity __
+  group __
+ !
+ crypto ikev2 policy IKEV2-POL
+  proposal IKEV2-PROP
+ !
+ ! crypto ikev2 keyring VPN-KEYRING
+  ! peer RIVANPH-PEER
+  !  address __.__.__.__
+  !  pre-shared-key _________
+ !
+ crypto ikev2 profile IKEV2-PROF
+  match identity remote address __.__.__.__  __.__.__.__
+  authentication remote rsa-sig
+  authentication local rsa-sig
+  pki trustpoint RIVAN-JP
+  ! keyring local VPN-KEYRING
+   end
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+### STEP 2 - PHASE 2 (IPSEC)
+
+~~~
+!@UTM-PH, UTM-JP
+conf t
+ crypto ipsec transform-set TSET __-__  ___  __-__-__
+  mode transport
+ !
+ crypto ipsec profile VPN-IPSEC-PROF
+  set transform-set TSET
+  set ikev2-profile IKEV2-PROF
+  end
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+### STEP 3 - TUNNEL PROPERTIES
+
+~~~
+!@UTM-PH
+conf t
+ int tun1
+  ip add __.__.__.__  __.__.__.__
+  tunnel source __
+  tunnel destination __.__.__.__
+  tunnel mode ipsec ipv4
+  tunnel protection ipsec profile VPN-IPSEC-PROF
   end
 ~~~
 
 <br>
 
-Verify:
 ~~~
+!@UTM-JP
+conf t
+ int tun1
+  ip add __.__.__.__  __.__.__.__
+  tunnel source __
+  tunnel destination __.__.__.__
+  tunnel mode ipsec ipv4
+  tunnel protection ipsec profile VPN-IPSEC-PROF
+  end
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+### STEP 4 - Remote Subnets / Interesting Traffic
+
+~~~
+!@UTM-PH
+conf t
+ ip route __.__.__.__   __.__.__.__   __.__.__.__
+ ip route __.__.__.__   __.__.__.__   __.__.__.__
+ end
+~~~
+
+<br>
+
+~~~
+!@UTM-JP
+conf t
+ ip route __.__.__.__   __.__.__.__   __.__.__.__
+ end
+~~~
+
+
+<br>
+<br>
+
+---
+&nbsp;
+
+
+### Verification
+
 !@VPN-PH, VPN-JP
 show crypto isakmp sa
 show crypto ipsec sa
-~~~
-
-<br>
-<br>
-
----
-&nbsp;
