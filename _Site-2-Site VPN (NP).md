@@ -1,9 +1,8 @@
-S2S-VPN via Active Directory Certificate Services
+# S2S-VPN via Active Directory Certificate Services
 
 ## CERTIFICATE AUTHORITY
 
 ### Deployment
-
 ~~~
 !@UTM-PH
 conf t
